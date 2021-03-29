@@ -41,6 +41,35 @@ $s3Client = new S3Client([
     'version' => '2006-03-01'
 ]);
 
+try {
+    $results = $s3Client->getPaginator('ListObjects', [
+        'Bucket' => $BUCKET_NAME,
+    ]);
+
+    foreach ($results as $objects) {
+	$keys = [];
+	if (isset($objects['Contents']) && is_array($objects['Contents'])) {
+            foreach ($objects['Contents'] as $object) {
+                $keys[] = ['Key' => $object['Key']];
+            }
+        }
+
+        if ($keys) {
+            $s3Client->deleteObjects([
+                'Bucket' => $BUCKET_NAME,
+                'Delete' => [
+                    'Objects' => $keys
+                ],
+            ]);
+	}
+    }
+    $result = $s3Client->deleteBucket([
+        'Bucket' => $BUCKET_NAME,
+    ]);
+} catch (AwsException $e) {
+      echo $e->getMessage() . "\n";
+}
+
 //Delete all Objects when versioning is not enabled
 try {
     $objects = $s3Client->getIterator('ListObjects', ([
